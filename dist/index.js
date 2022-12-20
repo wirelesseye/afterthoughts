@@ -573,11 +573,11 @@ function range(...params) {
     }
 }
 
-function usePostList(page) {
+function usePosts(page) {
     const postList = useStaticData(`__aft_posts_${page}`, `/generate/data/posts/${page}.json`, (res) => res.json());
-    return postList;
+    return postList || [];
 }
-async function getPostPageNumList() {
+async function getPostPageNums() {
     const numPages = await fetch("/generate/data/posts.json").then(res => res.json()).then(json => json.numPages);
     return range(numPages).map(i => i.toString());
 }
@@ -611,12 +611,12 @@ var afterthoughts = /*#__PURE__*/Object.freeze({
     getPathParams: getPathParams,
     pathnameEquals: pathnameEquals,
     useStaticData: useStaticData,
-    usePostList: usePostList,
-    getPostPageNumList: getPostPageNumList,
+    usePosts: usePosts,
+    getPostPageNums: getPostPageNums,
     range: range,
     useRouter: useRouter,
     Link: Link,
     Router: Router
 });
 
-export { Base as HeadBase, Link$1 as HeadLink, Meta as HeadMeta, Style as HeadStyle, Title as HeadTitle, Link, Router, createApp, afterthoughts as default, defaultConfig, fetchConfig, getPathParams, getPostPageNumList, pathnameEquals, range, renderApp, useConfig, usePostList, useRouter, useSiteTitle, useStaticData };
+export { Base as HeadBase, Link$1 as HeadLink, Meta as HeadMeta, Style as HeadStyle, Title as HeadTitle, Link, Router, createApp, afterthoughts as default, defaultConfig, fetchConfig, getPathParams, getPostPageNums, pathnameEquals, range, renderApp, useConfig, usePosts, useRouter, useSiteTitle, useStaticData };

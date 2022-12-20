@@ -7,16 +7,16 @@ export interface PostInfo {
     synopsis: string;
 }
 
-export function usePostList(page: number) {
+export function usePosts(page: number) {
     const postList = useStaticData<PostInfo[]>(
         `__aft_posts_${page}`,
         `/generate/data/posts/${page}.json`,
         (res) => res.json()
     );
-    return postList;
+    return postList || [];
 }
 
-export async function getPostPageNumList() {
+export async function getPostPageNums() {
     const numPages: number = await fetch("/generate/data/posts.json").then(res => res.json()).then(json => json.numPages);
     return range(numPages).map(i => i.toString());
 }

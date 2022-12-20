@@ -18,5 +18,5 @@ export function usePosts(page: number) {
 
 export async function getPostPageNums() {
     const numPages: number = await fetch("/generate/data/posts.json").then(res => res.json()).then(json => json.numPages);
-    return range(numPages).map(i => i.toString());
+    return range(numPages).map(i => (i + 1).toString());
 }

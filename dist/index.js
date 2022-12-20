@@ -579,7 +579,7 @@ function usePosts(page) {
 }
 async function getPostPageNums() {
     const numPages = await fetch("/generate/data/posts.json").then(res => res.json()).then(json => json.numPages);
-    return range(numPages).map(i => i.toString());
+    return range(numPages).map(i => (i + 1).toString());
 }
 
 function Link(props) {

@@ -4,8 +4,8 @@ import {
     getPreloadDataMap,
     PreloadData,
     resetPreloadDataMap,
-} from "./static-data-utils";
-import { pages, PageType } from "./router-utils";
+} from "../utils/static-data-utils";
+import { pages, PageType } from "../utils/router-utils";
 import { StaticDataStore } from "../components/static-data-store";
 import { Router } from "../components/router";
 import { HeadProvider } from "react-head";
@@ -37,14 +37,11 @@ export function createApp(
             <StaticDataStore renderData={prerenderProps?.staticData}>
                 <HeadProvider headTags={prerenderProps?.headTags}>
                     <Router
+                        Factory={Factory}
                         renderPathname={prerenderProps?.pathname}
                         renderPage={prerenderProps?.page}
                         renderParams={prerenderProps?.params}
-                    >
-                        <Factory>
-                            <Router.Page />
-                        </Factory>
-                    </Router>
+                    />
                 </HeadProvider>
             </StaticDataStore>
         );

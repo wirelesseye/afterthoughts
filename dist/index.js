@@ -1,5 +1,5 @@
-import { jsx } from 'react/jsx-runtime';
 import React, { createContext, useContext, useMemo, useState, useEffect, useCallback, Suspense, createElement, Component } from 'react';
+import { jsx } from 'react/jsx-runtime';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import { createPortal } from 'react-dom';
 
@@ -41,6 +41,33 @@ function useStaticData(identifier, input, ...params) {
         });
     }, []);
     return data;
+}
+
+const defaultConfig = {
+    site: {
+        title: "afterthoughts",
+        navigation: {
+            home: "/",
+            archive: "/archive",
+            tags: "/tags",
+            about: "/about",
+        },
+    },
+    posts: {
+        numPerPage: 8,
+        synopsisMaxLength: 280,
+    },
+};
+function useConfig() {
+    const config = useStaticData("__aft_config", "/generate/config.json", (res) => res.json());
+    return config;
+}
+function useSiteTitle() {
+    const config = useConfig();
+    return config?.site.title;
+}
+function fetchConfig() {
+    return fetch("/generate/config.json").then(res => res.json());
 }
 
 let pages;
@@ -163,6 +190,36 @@ function pathnameEquals(otherPathname, currPathname) {
     return currPathname === otherPathname;
 }
 
+function range(...params) {
+    if (params.length === 1) {
+        return [...Array(params[0]).keys()];
+    }
+    else if (params.length === 2) {
+        const [start, end] = params;
+        const size = end - start;
+        return Array.from(new Array(size), (_x, i) => i + start);
+    }
+    else {
+        throw Error("invalid parameters");
+    }
+}
+
+function usePosts(page) {
+    const postList = useStaticData(`__aft_posts_${page}`, `/generate/data/posts/${page}.json`, (res) => res.json());
+    return postList || [];
+}
+async function getPostPageNums() {
+    const numPages = await fetch("/generate/data/posts.json").then(res => res.json()).then(json => json.numPages);
+    return range(numPages).map(i => (i + 1).toString());
+}
+
+const routerContext = createContext({
+    pathname: "/",
+    navigate: () => { },
+});
+const RouterProvider = routerContext.Provider;
+const useRouter = () => useContext(routerContext);
+
 function StaticDataStore({ children, renderData, }) {
     const [staticDataMap, setStaticDataMap] = useState(() => {
         if (renderData) {
@@ -191,14 +248,7 @@ function StaticDataStore({ children, renderData, }) {
         }, children: children }));
 }
 
-const routerContext = createContext({
-    pathname: "/",
-    navigate: () => { },
-});
-const RouterProvider = routerContext.Provider;
-const useRouter = () => useContext(routerContext);
-
-function Router({ renderPathname, renderPage, renderParams, children, }) {
+function Router({ renderPathname, renderPage, renderParams, Factory, }) {
     const [pathname, setPathname] = useState(renderPathname ? renderPathname : window.location.pathname);
     const navigate = useCallback((url, target) => {
         const parser = new URL(url, window.location.href);
@@ -221,25 +271,22 @@ function Router({ renderPathname, renderPage, renderParams, children, }) {
     }, []);
     return (jsx(RouterProvider, { value: {
             pathname,
-            renderPage,
-            renderParams,
             navigate,
-        }, children: children }));
+        }, children: jsx(Factory, { children: jsx(RouterPage, { renderPage: renderPage, renderParams: renderParams, pathname: pathname }) }) }));
 }
-Router.Page = () => {
-    const router = useRouter();
+function RouterPage({ renderPage, renderParams, pathname }) {
     const [Page, params] = useMemo(() => {
-        if (router.renderPage) {
-            return [router.renderPage, router.renderParams];
+        if (renderPage) {
+            return [renderPage, renderParams];
         }
         else {
-            const [factory, params] = getPage(router.pathname);
+            const [factory, params] = getPage(pathname);
             const Page = React.lazy(factory);
             return [Page, params];
         }
-    }, [router.pathname]);
+    }, [pathname]);
     return (jsx(Suspense, { children: jsx(Page, { params: params }) }));
-};
+}
 
 function _extends() {
   _extends = Object.assign ? Object.assign.bind() : function (target) {
@@ -503,7 +550,7 @@ var Base = function Base(props) {
 
 function createApp(Factory) {
     function App({ prerenderProps }) {
-        return (jsx(StaticDataStore, { renderData: prerenderProps?.staticData, children: jsx(HeadProvider, { headTags: prerenderProps?.headTags, children: jsx(Router, { renderPathname: prerenderProps?.pathname, renderPage: prerenderProps?.page, renderParams: prerenderProps?.params, children: jsx(Factory, { children: jsx(Router.Page, {}) }) }) }) }));
+        return (jsx(StaticDataStore, { renderData: prerenderProps?.staticData, children: jsx(HeadProvider, { headTags: prerenderProps?.headTags, children: jsx(Router, { Factory: Factory, renderPathname: prerenderProps?.pathname, renderPage: prerenderProps?.page, renderParams: prerenderProps?.params }) }) }));
     }
     App.pages = pages;
     App.getPreloadDataMap = getPreloadDataMap;
@@ -518,56 +565,6 @@ function renderApp(app, container) {
     else {
         hydrateRoot(container, app);
     }
-}
-
-const defaultConfig = {
-    site: {
-        title: "afterthoughts",
-        navigation: {
-            home: "/",
-            archive: "/archive",
-            tags: "/tags",
-            about: "/about",
-        },
-    },
-    posts: {
-        numPerPage: 8,
-        synopsisMaxLength: 280,
-    },
-};
-function useConfig() {
-    const config = useStaticData("__aft_config", "/generate/config.json", (res) => res.json());
-    return config;
-}
-function useSiteTitle() {
-    const config = useConfig();
-    return config?.site.title;
-}
-function fetchConfig() {
-    return fetch("/generate/config.json").then(res => res.json());
-}
-
-function range(...params) {
-    if (params.length === 1) {
-        return [...Array(params[0]).keys()];
-    }
-    else if (params.length === 2) {
-        const [start, end] = params;
-        const size = end - start;
-        return Array.from(new Array(size), (_x, i) => i + start);
-    }
-    else {
-        throw Error("invalid parameters");
-    }
-}
-
-function usePosts(page) {
-    const postList = useStaticData(`__aft_posts_${page}`, `/generate/data/posts/${page}.json`, (res) => res.json());
-    return postList || [];
-}
-async function getPostPageNums() {
-    const numPages = await fetch("/generate/data/posts.json").then(res => res.json()).then(json => json.numPages);
-    return range(numPages).map(i => (i + 1).toString());
 }
 
 function Link(props) {
@@ -590,8 +587,6 @@ var afterthoughts = /*#__PURE__*/Object.freeze({
     HeadMeta: Meta,
     HeadLink: Link$1,
     HeadBase: Base,
-    createApp: createApp,
-    renderApp: renderApp,
     defaultConfig: defaultConfig,
     useConfig: useConfig,
     useSiteTitle: useSiteTitle,
@@ -603,6 +598,8 @@ var afterthoughts = /*#__PURE__*/Object.freeze({
     getPostPageNums: getPostPageNums,
     range: range,
     useRouter: useRouter,
+    createApp: createApp,
+    renderApp: renderApp,
     Link: Link,
     Router: Router
 });

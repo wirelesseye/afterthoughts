@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { useState, ReactNode, Suspense } from "react";
-import { RouterProvider, useRouter } from "../contexts/router-context";
+import { RouterProvider } from "../contexts/router-context";
 import { getPage } from "../utils/router-utils";
 
 export interface RouterProps {
-    children?: ReactNode;
+    Factory: (props: { children: ReactNode }) => JSX.Element;
     renderPathname: string | undefined;
     renderPage: React.ComponentType<any> | undefined;
     renderParams: Record<string, string> | undefined;
@@ -14,7 +14,7 @@ export function Router({
     renderPathname,
     renderPage,
     renderParams,
-    children,
+    Factory,
 }: RouterProps) {
     const [pathname, setPathname] = useState(
         renderPathname ? renderPathname : window.location.pathname
@@ -52,28 +52,36 @@ export function Router({
         <RouterProvider
             value={{
                 pathname,
-                renderPage,
-                renderParams,
                 navigate,
             }}
         >
-            {children}
+            <Factory>
+                <RouterPage
+                    renderPage={renderPage}
+                    renderParams={renderParams}
+                    pathname={pathname}
+                />
+            </Factory>
         </RouterProvider>
     );
 }
 
-Router.Page = () => {
-    const router = useRouter();
+interface RouterPageProps {
+    pathname: string;
+    renderPage: React.ComponentType<any> | undefined;
+    renderParams: Record<string, string> | undefined;
+}
 
+function RouterPage({ renderPage, renderParams, pathname }: RouterPageProps) {
     const [Page, params] = useMemo(() => {
-        if (router.renderPage) {
-            return [router.renderPage, router.renderParams];
+        if (renderPage) {
+            return [renderPage, renderParams];
         } else {
-            const [factory, params] = getPage(router.pathname);
+            const [factory, params] = getPage(pathname);
             const Page = React.lazy(factory);
             return [Page, params];
         }
-    }, [router.pathname]);
+    }, [pathname]);
 
     return (
         <Suspense>

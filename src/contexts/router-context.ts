@@ -1,9 +1,7 @@
-import { ComponentType, createContext, useContext } from "react";
+import { createContext, useContext } from "react";
 
 interface RouterContextProps {
     pathname: string;
-    renderPage?: ComponentType<any>;
-    renderParams?: Record<string, string>;
     navigate: (url: string, target?: string) => void;
 }
 

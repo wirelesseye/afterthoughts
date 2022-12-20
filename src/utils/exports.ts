@@ -1,5 +1,5 @@
 export { createApp, renderApp } from "./app-utils";
-export { defaultConfig, useConfig, fetchConfig } from "./config-utils";
+export { defaultConfig, useConfig, useSiteTitle, fetchConfig } from "./config-utils";
 export { getPathParams, pathnameEquals } from "./router-utils";
 export { useStaticData } from "./static-data-utils";
 export { usePostList, getPostPageNumList } from "./post-utils";

@@ -551,6 +551,10 @@ function useConfig() {
     const config = useStaticData("__aft_config", "/generate/config.json", (res) => res.json());
     return config;
 }
+function useSiteTitle() {
+    const config = useConfig();
+    return config?.site.title;
+}
 function fetchConfig() {
     return fetch("/generate/config.json").then(res => res.json());
 }
@@ -602,6 +606,7 @@ var afterthoughts = /*#__PURE__*/Object.freeze({
     renderApp: renderApp,
     defaultConfig: defaultConfig,
     useConfig: useConfig,
+    useSiteTitle: useSiteTitle,
     fetchConfig: fetchConfig,
     getPathParams: getPathParams,
     pathnameEquals: pathnameEquals,
@@ -614,4 +619,4 @@ var afterthoughts = /*#__PURE__*/Object.freeze({
     Router: Router
 });
 
-export { Base as HeadBase, Link$1 as HeadLink, Meta as HeadMeta, Style as HeadStyle, Title as HeadTitle, Link, Router, createApp, afterthoughts as default, defaultConfig, fetchConfig, getPathParams, getPostPageNumList, pathnameEquals, range, renderApp, useConfig, usePostList, useRouter, useStaticData };
+export { Base as HeadBase, Link$1 as HeadLink, Meta as HeadMeta, Style as HeadStyle, Title as HeadTitle, Link, Router, createApp, afterthoughts as default, defaultConfig, fetchConfig, getPathParams, getPostPageNumList, pathnameEquals, range, renderApp, useConfig, usePostList, useRouter, useSiteTitle, useStaticData };

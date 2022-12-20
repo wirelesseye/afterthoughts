@@ -14,5 +14,6 @@ type Subset<K> = {
 export type UserConfig = Subset<AftConfig>;
 export declare const defaultConfig: AftConfig;
 export declare function useConfig(): AftConfig | undefined;
+export declare function useSiteTitle(): string | undefined;
 export declare function fetchConfig(): Promise<AftConfig>;
 export {};

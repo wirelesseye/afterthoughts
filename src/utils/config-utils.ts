@@ -41,6 +41,11 @@ export function useConfig() {
     return config;
 }
 
+export function useSiteTitle() {
+    const config = useConfig();
+    return config?.site.title;
+}
+
 export function fetchConfig(): Promise<AftConfig> {
     return fetch("/generate/config.json").then(res => res.json());
 }

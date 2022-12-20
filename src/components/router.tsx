@@ -23,7 +23,10 @@ export function Router({
     const navigate = useCallback(
         (url: string, target?: string) => {
             const parser = new URL(url, window.location.href);
-            if (parser.origin !== window.location.origin || target === "_blank") {
+            if (
+                parser.origin !== window.location.origin ||
+                target === "_blank"
+            ) {
                 window.open(url, target);
                 return;
             }
@@ -61,17 +64,16 @@ export function Router({
 
 Router.Page = () => {
     const router = useRouter();
-    const [params, setParams] = useState(router.renderParams ? router.renderParams : {});
 
-    const Page = useMemo(() => (
-        router.renderPage
-            ? router.renderPage
-            : React.lazy(async() => {
-                const [page, params] = await getPage(router.pathname);
-                setParams(params);
-                return page;
-            })
-    ), [router.pathname]);
+    const [Page, params] = useMemo(() => {
+        if (router.renderPage) {
+            return [router.renderPage, router.renderParams];
+        } else {
+            const [factory, params] = getPage(router.pathname);
+            const Page = React.lazy(factory);
+            return [Page, params];
+        }
+    }, [router.pathname]);
 
     return (
         <Suspense>

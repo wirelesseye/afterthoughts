@@ -45,7 +45,6 @@ function useStaticData(identifier, input, ...params) {
 
 let pages;
 let pagesWithParams;
-let notFoundPage;
 updatePages();
 function updatePages() {
     try {
@@ -75,17 +74,10 @@ function updatePages() {
             pathname
                 .split("{}")
                 .map((s) => escapeRegExp(s))
-                .join("([^\\\\\\/]*)") +
+                .join("([^\\\\\\/]*?)") +
             suffix);
         const baseParamSize = getPathParams(base).length;
         pagesWithParams.push([reg, pages[key], params, baseParamSize]);
-    }
-    const notFounds = [`/pages/_404.tsx`, `/pages/_404.ts`];
-    for (const filename of notFounds) {
-        if (filename in pages) {
-            notFoundPage = pages[filename];
-            break;
-        }
     }
 }
 function getPathParams(filepath) {
@@ -116,7 +108,7 @@ function dirname(path) {
 function escapeRegExp(s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-async function getPage(pathname) {
+function getPage(pathname) {
     if (import.meta.env.DEV) {
         updatePages();
     }
@@ -133,37 +125,30 @@ async function getPage(pathname) {
     ];
     for (const filename of candidates) {
         if (filename in pages) {
-            const page = await pages[filename]();
-            if (page.default === undefined) {
-                continue;
-            }
-            else {
-                return [page, {}];
-            }
+            return [pages[filename], {}];
         }
     }
     for (const [reg, factory, params, baseParamSize] of pagesWithParams) {
         const match = reg.exec(pathname);
         if (match !== null) {
-            const page = await factory();
-            if (page.default === undefined) {
-                continue;
+            const paramKeys = params.slice(-baseParamSize);
+            const paramValues = match
+                .slice(1, 1 + params.length)
+                .slice(-baseParamSize);
+            const paramMap = {};
+            for (let i = 0; i < paramKeys.length; i++) {
+                paramMap[paramKeys[i]] = paramValues[i];
             }
-            else {
-                const paramKeys = params.slice(-baseParamSize);
-                const paramValues = match.slice(1, 1 + params.length).slice(-baseParamSize);
-                const paramMap = {};
-                for (let i = 0; i < paramKeys.length; i++) {
-                    paramMap[paramKeys[i]] = paramValues[i];
-                }
-                return [page, paramMap];
-            }
+            return [factory, paramMap];
         }
     }
-    if (notFoundPage) {
-        return [await notFoundPage(), {}];
+    const notFounds = [`/pages/_404.tsx`, `/pages/_404.ts`];
+    for (const filename of notFounds) {
+        if (filename in pages) {
+            return [pages[filename], {}];
+        }
     }
-    throw Error(`Page not found: ${pathname}`);
+    throw Error(`no such page: ${pathname}`);
 }
 function pathnameEquals(otherPathname, currPathname) {
     if (!currPathname) {
@@ -217,7 +202,8 @@ function Router({ renderPathname, renderPage, renderParams, children, }) {
     const [pathname, setPathname] = useState(renderPathname ? renderPathname : window.location.pathname);
     const navigate = useCallback((url, target) => {
         const parser = new URL(url, window.location.href);
-        if (parser.origin !== window.location.origin || target === "_blank") {
+        if (parser.origin !== window.location.origin ||
+            target === "_blank") {
             window.open(url, target);
             return;
         }
@@ -242,14 +228,16 @@ function Router({ renderPathname, renderPage, renderParams, children, }) {
 }
 Router.Page = () => {
     const router = useRouter();
-    const [params, setParams] = useState(router.renderParams ? router.renderParams : {});
-    const Page = useMemo(() => (router.renderPage
-        ? router.renderPage
-        : React.lazy(async () => {
-            const [page, params] = await getPage(router.pathname);
-            setParams(params);
-            return page;
-        })), [router.pathname]);
+    const [Page, params] = useMemo(() => {
+        if (router.renderPage) {
+            return [router.renderPage, router.renderParams];
+        }
+        else {
+            const [factory, params] = getPage(router.pathname);
+            const Page = React.lazy(factory);
+            return [Page, params];
+        }
+    }, [router.pathname]);
     return (jsx(Suspense, { children: jsx(Page, { params: params }) }));
 };
 
@@ -514,8 +502,8 @@ var Base = function Base(props) {
 };
 
 function createApp(Factory) {
-    function App({ renderPathname, renderPage, renderParams, renderData, renderHeadTags, }) {
-        return (jsx(StaticDataStore, { renderData: renderData, children: jsx(HeadProvider, { headTags: renderHeadTags, children: jsx(Router, { renderPathname: renderPathname, renderPage: renderPage, renderParams: renderParams, children: jsx(Factory, { children: jsx(Router.Page, {}) }) }) }) }));
+    function App({ prerenderProps }) {
+        return (jsx(StaticDataStore, { renderData: prerenderProps?.staticData, children: jsx(HeadProvider, { headTags: prerenderProps?.headTags, children: jsx(Router, { renderPathname: prerenderProps?.pathname, renderPage: prerenderProps?.page, renderParams: prerenderProps?.params, children: jsx(Factory, { children: jsx(Router.Page, {}) }) }) }) }));
     }
     App.pages = pages;
     App.getPreloadDataMap = getPreloadDataMap;

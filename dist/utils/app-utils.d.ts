@@ -1,12 +1,15 @@
 import React, { ReactElement, ReactNode } from "react";
 import { PreloadData } from "./static-data-utils";
 import { PageType } from "./router-utils";
+interface PrerenderProps {
+    pathname: string;
+    page: React.ComponentType<any>;
+    params: Record<string, string>;
+    headTags: ReactElement[];
+    staticData?: Record<string, any>;
+}
 export interface AppProps {
-    renderPathname?: string;
-    renderPage?: React.ComponentType<any>;
-    renderParams?: Record<string, string>;
-    renderData?: Record<string, any>;
-    renderHeadTags?: ReactElement[];
+    prerenderProps?: PrerenderProps;
 }
 export type AftApp = {
     (props: AppProps): JSX.Element;
@@ -18,3 +21,4 @@ export declare function createApp(Factory: (props: {
     children: ReactNode;
 }) => JSX.Element): AftApp;
 export declare function renderApp(app: ReactNode, container: HTMLElement): void;
+export {};

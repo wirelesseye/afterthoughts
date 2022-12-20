@@ -1,17 +1,25 @@
 import React, { ReactElement, ReactNode } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
-import { getPreloadDataMap, PreloadData, resetPreloadDataMap } from "./static-data-utils";
+import {
+    getPreloadDataMap,
+    PreloadData,
+    resetPreloadDataMap,
+} from "./static-data-utils";
 import { pages, PageType } from "./router-utils";
 import { StaticDataStore } from "../components/static-data-store";
 import { Router } from "../components/router";
 import { HeadProvider } from "react-head";
 
+interface PrerenderProps {
+    pathname: string;
+    page: React.ComponentType<any>;
+    params: Record<string, string>;
+    headTags: ReactElement[];
+    staticData?: Record<string, any>;
+}
+
 export interface AppProps {
-    renderPathname?: string;
-    renderPage?: React.ComponentType<any>;
-    renderParams?: Record<string, string>;
-    renderData?: Record<string, any>;
-    renderHeadTags?: ReactElement[];
+    prerenderProps?: PrerenderProps;
 }
 
 export type AftApp = {
@@ -24,20 +32,14 @@ export type AftApp = {
 export function createApp(
     Factory: (props: { children: ReactNode }) => JSX.Element
 ): AftApp {
-    function App({
-        renderPathname,
-        renderPage,
-        renderParams,
-        renderData,
-        renderHeadTags,
-    }: AppProps) {
+    function App({ prerenderProps }: AppProps) {
         return (
-            <StaticDataStore renderData={renderData}>
-                <HeadProvider headTags={renderHeadTags}>
+            <StaticDataStore renderData={prerenderProps?.staticData}>
+                <HeadProvider headTags={prerenderProps?.headTags}>
                     <Router
-                        renderPathname={renderPathname}
-                        renderPage={renderPage}
-                        renderParams={renderParams}
+                        renderPathname={prerenderProps?.pathname}
+                        renderPage={prerenderProps?.page}
+                        renderParams={prerenderProps?.params}
                     >
                         <Factory>
                             <Router.Page />

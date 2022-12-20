@@ -5,7 +5,6 @@ export type PageType = {
 
 let pages: Record<string, () => Promise<PageType>>;
 let pagesWithParams: [RegExp, () => Promise<PageType>, string[], number][];
-let notFoundPage: () => Promise<PageType>;
 
 updatePages();
 
@@ -46,21 +45,13 @@ function updatePages() {
                 pathname
                     .split("{}")
                     .map((s) => escapeRegExp(s))
-                    .join("([^\\\\\\/]*)") +
+                    .join("([^\\\\\\/]*?)") +
                 suffix
         );
 
         const baseParamSize = getPathParams(base).length;
 
         pagesWithParams.push([reg, pages[key], params, baseParamSize]);
-    }
-
-    const notFounds = [`/pages/_404.tsx`, `/pages/_404.ts`];
-    for (const filename of notFounds) {
-        if (filename in pages) {
-            notFoundPage = pages[filename];
-            break;
-        }
     }
 }
 
@@ -96,9 +87,9 @@ function escapeRegExp(s: string) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export async function getPage(
+export function getPage(
     pathname: string
-): Promise<[PageType, Record<string, string>]> {
+): [() => Promise<PageType>, Record<string, string>] {
     if (import.meta.env.DEV) {
         updatePages();
     }
@@ -118,39 +109,34 @@ export async function getPage(
 
     for (const filename of candidates) {
         if (filename in pages) {
-            const page = await pages[filename]();
-            if (page.default === undefined) {
-                continue;
-            } else {
-                return [page, {}];
-            }
+            return [pages[filename], {}];
         }
     }
 
     for (const [reg, factory, params, baseParamSize] of pagesWithParams) {
         const match = reg.exec(pathname);
         if (match !== null) {
-            const page = await factory();
-            if (page.default === undefined) {
-                continue;
-            } else {
-                const paramKeys = params.slice(-baseParamSize);
-                const paramValues = match.slice(1, 1 + params.length).slice(-baseParamSize);
-                const paramMap: Record<string, string> = {};
+            const paramKeys = params.slice(-baseParamSize);
+            const paramValues = match
+                .slice(1, 1 + params.length)
+                .slice(-baseParamSize);
+            const paramMap: Record<string, string> = {};
 
-                for (let i = 0; i < paramKeys.length; i++) {
-                    paramMap[paramKeys[i]] = paramValues[i];
-                }
-                return [page, paramMap];
+            for (let i = 0; i < paramKeys.length; i++) {
+                paramMap[paramKeys[i]] = paramValues[i];
             }
+            return [factory, paramMap];
         }
     }
 
-    if (notFoundPage) {
-        return [await notFoundPage(), {}];
+    const notFounds = [`/pages/_404.tsx`, `/pages/_404.ts`];
+    for (const filename of notFounds) {
+        if (filename in pages) {
+            return [pages[filename], {}];
+        }
     }
 
-    throw Error(`Page not found: ${pathname}`);
+    throw Error(`no such page: ${pathname}`);
 }
 
 export function pathnameEquals(otherPathname: string, currPathname?: string) {

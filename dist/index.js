@@ -302,7 +302,11 @@ function Router({ renderPathname, renderPage, renderParams, Factory, }) {
             navigate,
         }, children: jsx(Factory, { children: jsx(RouterPage, { renderPage: renderPage, renderParams: renderParams, pathname: pathname }) }) }));
 }
-const Loader = Object.values(import.meta.glob("/components/loader.{tsx,ts}", { eager: true }))[0].default;
+let Loader;
+try {
+    Loader = Object.values(import.meta.glob("/components/loader.{tsx,ts}", { eager: true }))[0].default;
+}
+catch { }
 function RouterPage({ renderPage, renderParams, pathname }) {
     const [Page, params] = useMemo(() => {
         if (renderPage) {

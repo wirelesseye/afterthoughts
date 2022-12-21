@@ -66,11 +66,14 @@ export function Router({
     );
 }
 
-const Loader = (
-    Object.values(
-        import.meta.glob("/components/loader.{tsx,ts}", { eager: true })
-    )[0] as any
-).default as () => JSX.Element;
+let Loader: () => JSX.Element;
+try {
+    Loader = (
+        Object.values(
+            import.meta.glob("/components/loader.{tsx,ts}", { eager: true })
+        )[0] as any
+    ).default as () => JSX.Element;
+} catch {}
 
 interface RouterPageProps {
     pathname: string;

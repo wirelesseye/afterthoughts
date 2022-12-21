@@ -32,7 +32,6 @@ function useStaticData<T>(
     ...params: any[]
 ): T | undefined {
     const staticData = useContext(staticDataContext);
-
     const [init, callback] = useMemo(() => {
         let init: RequestInit | undefined = undefined;
         let callback: (response: Response) => Promise<any>;
@@ -46,20 +45,24 @@ function useStaticData<T>(
 
         preloadDataMap[identifier] = { input, init, callback };
         return [init, callback];
-    }, []);
+    }, [params]);
 
     const [data, setData] = useState<any>(staticData.getStaticData(identifier));
 
     useEffect(() => {
-        if (data !== undefined) return;
-
-        fetch(input, init)
-            .then((response) => callback(response))
-            .then((result) => {
-                staticData.setStaticData(identifier, result);
-                setData(result);
-            });
-    }, []);
+        const existData = staticData.getStaticData(identifier);
+        if (existData !== undefined) {
+            setData(existData);
+        } else {
+            setData(undefined);
+            fetch(input, init)
+                .then((response) => callback(response))
+                .then((result) => {
+                    staticData.setStaticData(identifier, result);
+                    setData(result);
+                });
+        }
+    }, [identifier]);
 
     return data;
 }

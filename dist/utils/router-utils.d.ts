@@ -1,4 +1,3 @@
-/// <reference types="react" />
 export type PageType = {
     default: React.ComponentType<any>;
     [key: string]: any;

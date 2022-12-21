@@ -9,7 +9,8 @@
         "jsx": "react-jsx",
         "outDir": "dist",
         "noEmit": true,
-        "isolatedModules": true
+        "isolatedModules": true,
+        "types": ["vite/client"]
     },
     "include": ["src/**/*"]
 }

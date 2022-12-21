@@ -1,4 +1,3 @@
-/// <reference types="react" />
 export interface StaticDataContextProps {
     getStaticData: (identifier: string) => any;
     setStaticData: (identifier: string, data: any) => void;

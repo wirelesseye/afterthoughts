@@ -1,4 +1,3 @@
-/// <reference types="react" />
 interface RouterContextProps {
     pathname: string;
     navigate: (url: string, target?: string) => void;

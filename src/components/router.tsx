@@ -66,6 +66,12 @@ export function Router({
     );
 }
 
+const Loader = (
+    Object.values(
+        import.meta.glob("/components/loader.{tsx,ts}", { eager: true })
+    )[0] as any
+).default as () => JSX.Element;
+
 interface RouterPageProps {
     pathname: string;
     renderPage: React.ComponentType<any> | undefined;
@@ -84,8 +90,8 @@ function RouterPage({ renderPage, renderParams, pathname }: RouterPageProps) {
     }, [pathname]);
 
     return (
-        <Suspense>
+        <Suspense fallback={Loader ? <Loader /> : undefined}>
             <Page params={params} />
         </Suspense>
     );
-};
+}

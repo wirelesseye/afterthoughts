@@ -119,7 +119,8 @@ export function getPage(
             const paramKeys = params.slice(-baseParamSize);
             const paramValues = match
                 .slice(1, 1 + params.length)
-                .slice(-baseParamSize);
+                .slice(-baseParamSize)
+                .map(s => decodeURI(s));
             const paramMap: Record<string, string> = {};
 
             for (let i = 0; i < paramKeys.length; i++) {

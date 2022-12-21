@@ -1,4 +1,4 @@
-import { createContext } from "react";
+import { createContext, useContext } from "react";
 
 export interface StaticDataContextProps {
     getStaticData: (identifier: string) => any;

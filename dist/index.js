@@ -28,18 +28,23 @@ function useStaticData(identifier, input, ...params) {
         }
         preloadDataMap[identifier] = { input, init, callback };
         return [init, callback];
-    }, []);
+    }, [params]);
     const [data, setData] = useState(staticData.getStaticData(identifier));
     useEffect(() => {
-        if (data !== undefined)
-            return;
-        fetch(input, init)
-            .then((response) => callback(response))
-            .then((result) => {
-            staticData.setStaticData(identifier, result);
-            setData(result);
-        });
-    }, []);
+        const existData = staticData.getStaticData(identifier);
+        if (existData !== undefined) {
+            setData(existData);
+        }
+        else {
+            setData(undefined);
+            fetch(input, init)
+                .then((response) => callback(response))
+                .then((result) => {
+                staticData.setStaticData(identifier, result);
+                setData(result);
+            });
+        }
+    }, [identifier]);
     return data;
 }
 
@@ -161,7 +166,8 @@ function getPage(pathname) {
             const paramKeys = params.slice(-baseParamSize);
             const paramValues = match
                 .slice(1, 1 + params.length)
-                .slice(-baseParamSize);
+                .slice(-baseParamSize)
+                .map(s => decodeURI(s));
             const paramMap = {};
             for (let i = 0; i < paramKeys.length; i++) {
                 paramMap[paramKeys[i]] = paramValues[i];
@@ -204,13 +210,35 @@ function range(...params) {
     }
 }
 
+function fetchPosts(page) {
+    return fetch(`/generate/data/posts/${page}.json`).then((res) => res.json());
+}
 function usePosts(page) {
     const postList = useStaticData(`__aft_posts_${page}`, `/generate/data/posts/${page}.json`, (res) => res.json());
     return postList || [];
 }
-async function getPostPageNums() {
-    const numPages = await fetch("/generate/data/posts.json").then(res => res.json()).then(json => json.numPages);
-    return range(numPages).map(i => (i + 1).toString());
+async function getPageNums() {
+    const numPages = await fetch("/generate/data/posts.json")
+        .then((res) => res.json())
+        .then((json) => json.numPages);
+    return range(numPages).map((i) => (i + 1).toString());
+}
+function useNumPages() {
+    const numPages = useStaticData("__aft_num_post_pages", "/generate/data/posts.json", (res) => res.json().then((json) => json.numPages));
+    return numPages;
+}
+async function getPostFilenames() {
+    const result = [];
+    const pageNums = await getPageNums();
+    for (const pageNum of pageNums) {
+        const posts = await fetchPosts(pageNum);
+        posts.forEach((post) => result.push(post.filename));
+    }
+    return result;
+}
+function usePost(filename) {
+    const post = useStaticData(`__aft_post_${filename}`, `/generate/posts/${filename}.md`, (res) => res.text());
+    return post;
 }
 
 const routerContext = createContext({
@@ -274,6 +302,7 @@ function Router({ renderPathname, renderPage, renderParams, Factory, }) {
             navigate,
         }, children: jsx(Factory, { children: jsx(RouterPage, { renderPage: renderPage, renderParams: renderParams, pathname: pathname }) }) }));
 }
+const Loader = Object.values(import.meta.glob("/components/loader.{tsx,ts}", { eager: true }))[0].default;
 function RouterPage({ renderPage, renderParams, pathname }) {
     const [Page, params] = useMemo(() => {
         if (renderPage) {
@@ -285,7 +314,7 @@ function RouterPage({ renderPage, renderParams, pathname }) {
             return [Page, params];
         }
     }, [pathname]);
-    return (jsx(Suspense, { children: jsx(Page, { params: params }) }));
+    return (jsx(Suspense, { fallback: Loader ? jsx(Loader, {}) : undefined, children: jsx(Page, { params: params }) }));
 }
 
 function _extends() {
@@ -594,8 +623,12 @@ var afterthoughts = /*#__PURE__*/Object.freeze({
     getPathParams: getPathParams,
     pathnameEquals: pathnameEquals,
     useStaticData: useStaticData,
+    fetchPosts: fetchPosts,
     usePosts: usePosts,
-    getPostPageNums: getPostPageNums,
+    getPageNums: getPageNums,
+    useNumPages: useNumPages,
+    getPostFilenames: getPostFilenames,
+    usePost: usePost,
     range: range,
     useRouter: useRouter,
     createApp: createApp,
@@ -604,4 +637,4 @@ var afterthoughts = /*#__PURE__*/Object.freeze({
     Router: Router
 });
 
-export { Base as HeadBase, Link$1 as HeadLink, Meta as HeadMeta, Style as HeadStyle, Title as HeadTitle, Link, Router, createApp, afterthoughts as default, defaultConfig, fetchConfig, getPathParams, getPostPageNums, pathnameEquals, range, renderApp, useConfig, usePosts, useRouter, useSiteTitle, useStaticData };
+export { Base as HeadBase, Link$1 as HeadLink, Meta as HeadMeta, Style as HeadStyle, Title as HeadTitle, Link, Router, createApp, afterthoughts as default, defaultConfig, fetchConfig, fetchPosts, getPageNums, getPathParams, getPostFilenames, pathnameEquals, range, renderApp, useConfig, useNumPages, usePost, usePosts, useRouter, useSiteTitle, useStaticData };
